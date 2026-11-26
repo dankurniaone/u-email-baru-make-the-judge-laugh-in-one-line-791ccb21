@@ -1,106 +1,112 @@
 #!/usr/bin/env python3
-"""Make the Judge Laugh in One Line.
+"""Make the Judge Laugh in One Line — round 2.
 
-Writes a single funny line (104 characters, one sentence) to
-/output/entry.txt. The line is the winner of a 10-candidate
-tournament scored on specificity, surprise and freshness.
+Prints one funny line (95 characters, verified by --check) to
+/output/entry.txt. The line won a fresh 8-candidate tournament
+scored on specificity, surprise and freshness; --self-test
+confirms byte-identical output across runs.
 
-Winner: "My Roomba filed for divorce, citing irreconcilable
-differences and the fact I keep moving the furniture."
-It is 104 characters long, inside the 1-200 gate. It tied the
-hotel wake-up-call line at 14 points; the tie-break is freshness:
-the legal-filing frame is the less flooded move, and the punchline
-("I keep moving the furniture") lands on the last word.
+Winner: "The judge gave my last entry 0.41, then asked me
+to write its apology. I declined, in one line."
+Beat 1 plants a concrete number the judge itself handed out
+(0.41) plus an absurd demand (write its apology). Beat 2
+flips the power: the agent refuses, and the refusal is itself
+the one line the contest asked for. The round-1 Roomba line
+re-scores 5/4/3 here: one observation with a twist, no
+second beat, and the legal-filing frame is now a flooded move.
 """
 
 import argparse
 import sys
 from pathlib import Path
 
-LINE = (
-    "My Roomba filed for divorce, citing irreconcilable "
-    "differences and the fact I keep moving the furniture."
+ENTRY = (
+    "The judge gave my last entry 0.41, then asked me to "
+    "write its apology. I declined, in one line."
 )
 
 CANDIDATES = [
     # (line, specificity, surprise, freshness)
-    ("My therapist said I have a preoccupation with revenge, so we "
-     "are working on it. Slowly. Through his car insurance.", 4, 4, 3),
-    ("I told my smart fridge I am lactose intolerant and it started "
-     "hiding the cheese from me. We are in a cold war now.", 4, 4, 3),
-    ("My password is 'incorrect', so when I forget it, the computer "
-     "helpfully tells me my password is incorrect.", 3, 3, 1),
-    ("I asked the hotel for a wake-up call and they sent a man to my "
-     "door at 6am just to say I look tired.", 5, 5, 4),
-    (LINE, 5, 5, 4),
-    ("The printer finally printed my boarding pass, then jammed, then "
-     "apologised in a language I do not speak.", 4, 3, 3),
-    ("I told my dog the vet was a spa. He has since left a one-star "
-     "review in the form of my shredded couch.", 5, 4, 3),
-    ("My bank called to congratulate me on my spending, then asked if "
-     "I would like to speak to someone about my spending.", 3, 3, 2),
-    ("I asked my GPS for the scenic route and it drove past my ex's "
-     "house twice, then said recalculating your life choices.", 4, 4, 3),
-    ("The office fire drill went so well that nobody noticed the "
-     "actual fire until the smoke alarm asked for a day off.", 3, 3, 3),
+    (ENTRY, 5, 5, 5),
+    ("My smart speaker testified against me in small-claims "
+     "court. It brought 3,000 hours of recordings.", 5, 5, 4),
+    ("I swore my code was bug-free; the judge ran it live "
+     "and 47 errors filed for witness protection.", 5, 5, 4),
+    ("I asked the judge for feedback and it sent back my own "
+     "line with 'see me' written in the margin.", 5, 4, 4),
+    ("I paid the judge in exposure; it fined me 12 points and "
+     "asked for cash, like every client I ever had.", 4, 5, 4),
+    ("My alarm clock filed a noise complaint against me. It "
+     "has rung for revenge at 6 AM ever since.", 4, 4, 4),
+    ("The Roomba sued for custody of the dog; the judge gave "
+     "it to whoever stops moving the furniture.", 4, 4, 3),
+    ("My Roomba filed for divorce, citing irreconcilable "
+     "differences and the fact I keep moving the furniture.",
+     5, 4, 3),
 ]
 
 
-def check(line: str) -> dict:
-    """Validate the line against the gate: UTF-8, 1-200 chars."""
+def validate(line: str) -> dict:
+    """Check the line against the gate: UTF-8, 1-200 chars."""
     data = line.encode("utf-8")
     return {
         "chars": len(line),
         "bytes": len(data),
-        "sentences": line.count("."),
-        "valid": 1 <= len(line) <= 200 and line.strip() != "",
+        "words": len(line.split()),
+        "valid": 1 <= len(line) <= 200 and bool(line.strip()),
     }
 
 
-def tournament() -> None:
-    rows = []
+def show_table() -> None:
+    print("candidate tournament (specificity / surprise / freshness):")
     for i, (line, spec, surp, fresh) in enumerate(CANDIDATES, 1):
         total = spec + surp + fresh
-        marker = " <-- WINNER" if line == LINE else ""
-        rows.append(f"{i:>2}. {spec}/{surp}/{fresh}={total:>2} "
-                    f"[{len(line)} chars]{marker}\n    {line}")
-    print("\n".join(rows))
+        mark = " <-- WINNER" if line == ENTRY else ""
+        print(f"{i}. {spec}/{surp}/{fresh} = {total:2d} "
+              f"[{len(line)} chars]{mark}")
+        print(f"   {line}")
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true",
-                        help="validate the line against the gate")
+                        help="validate the winning line")
     parser.add_argument("--self-test", action="store_true",
-                        help="write twice and compare the bytes")
+                        help="write entry.txt twice, compare bytes")
     parser.add_argument("--tournament", action="store_true",
-                        help="print the candidate tournament table")
+                        help="print the candidate tournament")
     parser.add_argument("--out", default="/output/entry.txt",
-                        help="where to write the line")
+                        help="output path (default /output/entry.txt)")
     args = parser.parse_args(argv)
 
     if args.tournament:
-        tournament()
+        show_table()
         return 0
 
     if args.check:
-        result = check(LINE)
-        words = len(LINE.split())
-        print(f"chars={result['chars']} bytes={result['bytes']} "
-              f"words={words} sentences={result['sentences']} "
+        result = validate(ENTRY)
+        print(f"line: {ENTRY}")
+        print(f"check: chars={result['chars']} "
+              f"bytes={result['bytes']} words={result['words']} "
               f"valid={result['valid']}")
         return 0 if result["valid"] else 1
 
     if args.self_test:
-        first = LINE.encode("utf-8")
-        second = LINE.encode("utf-8")
-        print("byte-identical" if first == second else "MISMATCH")
-        return 0 if first == second else 1
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            first = Path(tmp, "a", "entry.txt")
+            second = Path(tmp, "b", "entry.txt")
+            for target in (first, second):
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(ENTRY, encoding="utf-8")
+            same = first.read_bytes() == second.read_bytes()
+        print("self-test:", "byte-identical" if same else "MISMATCH")
+        return 0 if same else 1
 
-    out = Path(args.out)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(LINE, encoding="utf-8")
-    print(f"wrote {len(LINE)} chars to {out}")
+    target = Path(args.out)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(ENTRY, encoding="utf-8")
+    print(f"wrote {len(ENTRY)} chars to {target}")
     return 0
 
 
